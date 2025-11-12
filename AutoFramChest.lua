@@ -1,22 +1,22 @@
 -- Demon Hub UI Library (Compact + Draggable + Open/Close Button)
--- Version 1.1.0
--- Created by ChatGPT
+-- Fixed drag (works on PC & mobile)
+-- Version 1.2.0
 
 local DemonHub = {}
-DemonHub.Version = "v1.1.0"
+DemonHub.Version = "v1.2.0"
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
--- Create ScreenGui
+-- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "DemonHubUI"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game.CoreGui
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = game:GetService("CoreGui")
 
--- Open/Close Button
+-- Open / Close Button
 local OpenButton = Instance.new("TextButton")
-OpenButton.Name = "OpenButton"
 OpenButton.Size = UDim2.new(0, 38, 0, 38)
 OpenButton.Position = UDim2.new(0, 10, 0, 10)
 OpenButton.BackgroundColor3 = Color3.fromRGB(28, 30, 38)
@@ -24,28 +24,30 @@ OpenButton.Text = "☰"
 OpenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 OpenButton.Font = Enum.Font.GothamBold
 OpenButton.TextSize = 20
-OpenButton.AutoButtonColor = true
 OpenButton.Parent = ScreenGui
 
 local OpenCorner = Instance.new("UICorner", OpenButton)
 OpenCorner.CornerRadius = UDim.new(0, 8)
 
--- Main Window
+-- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 380, 0, 240)
 MainFrame.Position = UDim2.new(0.5, -190, 0.5, -120)
 MainFrame.BackgroundColor3 = Color3.fromRGB(28, 30, 38)
 MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = false
 MainFrame.Parent = ScreenGui
 
 local MainCorner = Instance.new("UICorner", MainFrame)
 MainCorner.CornerRadius = UDim.new(0, 10)
 
--- Make GUI Draggable
+-- Custom Draggable Function
 local dragging = false
 local dragStart, startPos
+
+local function updateDrag(input)
+	local delta = input.Position - dragStart
+	MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
 
 MainFrame.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -62,8 +64,7 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
 	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local delta = input.Position - dragStart
-		MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		updateDrag(input)
 	end
 end)
 
@@ -97,7 +98,7 @@ Version.Position = UDim2.new(0, 0, 0, 22)
 Version.Size = UDim2.new(1, 0, 0, 16)
 Version.Parent = Sidebar
 
--- Tabs List
+-- Tabs
 local TabList = Instance.new("Frame")
 TabList.Size = UDim2.new(1, 0, 1, -50)
 TabList.Position = UDim2.new(0, 0, 0, 45)
@@ -108,7 +109,7 @@ local TabListLayout = Instance.new("UIListLayout")
 TabListLayout.Padding = UDim.new(0, 4)
 TabListLayout.Parent = TabList
 
--- Right Side Container
+-- Tab Container
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(1, -90, 1, 0)
 TabContainer.Position = UDim2.new(0, 90, 0, 0)
@@ -116,7 +117,7 @@ TabContainer.BackgroundColor3 = Color3.fromRGB(32, 34, 42)
 TabContainer.BorderSizePixel = 0
 TabContainer.Parent = MainFrame
 
--- Core Functions
+-- Window System
 function DemonHub:CreateWindow(props)
 	local Window = {}
 	Window.Tabs = {}
@@ -162,69 +163,6 @@ function DemonHub:CreateWindow(props)
 			Button.MouseButton1Click:Connect(data.Callback or function() end)
 		end
 
-		function Tab:AddToggle(name, data)
-			local Frame = Instance.new("Frame")
-			Frame.Size = UDim2.new(1, -6, 0, 26)
-			Frame.BackgroundColor3 = Color3.fromRGB(45, 48, 58)
-			Frame.Parent = TabFrame
-			local Corner = Instance.new("UICorner", Frame)
-			Corner.CornerRadius = UDim.new(0, 6)
-
-			local Label = Instance.new("TextLabel")
-			Label.Text = data.Title or "Toggle"
-			Label.Font = Enum.Font.Gotham
-			Label.TextSize = 12
-			Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-			Label.BackgroundTransparency = 1
-			Label.Size = UDim2.new(1, -40, 1, 0)
-			Label.Position = UDim2.new(0, 8, 0, 0)
-			Label.TextXAlignment = Enum.TextXAlignment.Left
-			Label.Parent = Frame
-
-			local Toggle = Instance.new("TextButton")
-			Toggle.Size = UDim2.new(0, 26, 0, 12)
-			Toggle.Position = UDim2.new(1, -34, 0.5, -6)
-			Toggle.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-			Toggle.Text = ""
-			Toggle.AutoButtonColor = false
-			Toggle.Parent = Frame
-
-			local Circle = Instance.new("Frame")
-			Circle.Size = UDim2.new(0, 10, 0, 10)
-			Circle.Position = UDim2.new(0, 2, 0.5, -5)
-			Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			Circle.Parent = Toggle
-			local CircleCorner = Instance.new("UICorner", Circle)
-			CircleCorner.CornerRadius = UDim.new(1, 0)
-
-			local state = data.Default or false
-
-			local function update()
-				TweenService:Create(Toggle, TweenInfo.new(0.25), {
-					BackgroundColor3 = state and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(70, 70, 70)
-				}):Play()
-				TweenService:Create(Circle, TweenInfo.new(0.25), {
-					Position = state and UDim2.new(1, -12, 0.5, -5) or UDim2.new(0, 2, 0.5, -5)
-				}):Play()
-			end
-
-			update()
-			Toggle.MouseButton1Click:Connect(function()
-				state = not state
-				update()
-				if data.Callback then
-					data.Callback(state)
-				end
-			end)
-
-			return {
-				Value = state,
-				OnChanged = function(func)
-					data.Callback = func
-				end
-			}
-		end
-
 		TabButton.MouseButton1Click:Connect(function()
 			for _, v in pairs(TabContainer:GetChildren()) do
 				if v:IsA("ScrollingFrame") then
@@ -242,25 +180,19 @@ function DemonHub:CreateWindow(props)
 		return Tab
 	end
 
-	function Window:SelectTab(index)
-		for i, tab in ipairs(Window.Tabs) do
-			tab.Frame.Visible = (i == index)
-		end
-	end
-
 	return Window
 end
 
--- Open / Close GUI Logic
+-- Open / Close
 local open = true
 OpenButton.MouseButton1Click:Connect(function()
 	open = not open
 	if open then
-		TweenService:Create(MainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
 		MainFrame.Visible = true
+		TweenService:Create(MainFrame, TweenInfo.new(0.25), {BackgroundTransparency = 0}):Play()
 	else
-		TweenService:Create(MainFrame, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
-		task.wait(0.25)
+		TweenService:Create(MainFrame, TweenInfo.new(0.25), {BackgroundTransparency = 1}):Play()
+		task.wait(0.2)
 		MainFrame.Visible = false
 	end
 end)
